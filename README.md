@@ -12,7 +12,7 @@ Este repositorio contiene la nueva arquitectura **políglota, distribuida y con 
 
 ## 2. Arquitectura
 
-![Arquitectura](docs/img/arquitectura.png)
+![Arquitectura](/img/arquitectura.png)
 
 | Dato | Motor | Teoría | Réplica |
 |---|---|---|---|
@@ -75,10 +75,9 @@ docker exec distribuidora_redis redis-cli -a Admin123 DEL carrito:CLI-001
 
 | Evidencia | Captura |
 |---|---|
-| `rs.status()` con 3 miembros | ![rs.status](docs/img/rs_status.png) |
-| `SELECT` en PostgreSQL | ![postgres](docs/img/postgres_select.png) |
-| `GET` en Redis | ![redis](docs/img/redis_cmds.png) |
-| Réplicas Postgres (`pg_stat_replication`) | ![pg-repl](docs/img/pg_replication.png) |
+| `rs.status()` con 3 miembros | ![rs.status](/img/rs_status.png) |
+| `SELECT` en PostgreSQL | ![postgres](/img/postgres_select.png) |
+| `GET` en Redis | ![redis](/img/redis_cmds.png) |
 
 ## 7. Prueba de supervivencia (Plan de Caos)
 
@@ -104,24 +103,14 @@ Escenarios adicionales del Ingeniero de Caos:
 
 ## 9. Video de defensa
 
-[Ver video (Loom, 3 min)](PEGAR_ENLACE_AQUI)
+[Ver video (Loom, 3 min)](https://www.youtube.com/watch?v=xGnTUkhij1M)
 
 ## 10. Equipo
 
 | Integrante | Rol |
 |---|---|
-| Diego Alcaciega | _(Arquitecto/a CAP, DBA SQL, DBA NoSQL o Ingeniero/a de Caos)_ |
-| Jean Pierre Peñaranda | _(asignar)_ |
-| _(agregar)_ | _(asignar)_ |
+| Diego Alcaciega | _(Arquitecto/a CAP)_ |
+| Jean Pierre Peñaranda | _(Ingeniero/a de Caos)_ |
 
-## 11. Estructura del repositorio
 
-```
-.
-├── docker-compose.yml
-├── docker-compose.replicas.yml
-├── README.md
-└── docs/
-    ├── Taller_Poliglota_Grupo4.pdf
-    └── img/
 ```
