@@ -1,0 +1,136 @@
+version: '3.9'
+
+# Red dedicada para que todos los contenedores se vean por nombre de servicio
+networks:
+  polyglot_net:
+    driver: bridge
+    name: distribuidora_net
+
+volumes:
+  pg_data:
+  mongo_data:
+  redis_data:
+
+services:
+  # 1. POSTGRESQL - Para datos transaccionales ACID: facturas, pagos
+  postgres:
+    image: postgres:16-alpine
+    container_name: distribuidora_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: Admin123
+      POSTGRES_DB: distribuidora_acid
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - polyglot_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d distribuidora_acid"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: distribuidora_pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: profe@distribuidora.ec
+      PGADMIN_DEFAULT_PASSWORD: Admin123
+    ports:
+      - "5050:80"
+    networks:
+      - polyglot_net
+
+  # 2. MONGODB - Para datos polimorficos y de catalogo: productos, clientes
+  # Usamos replica set de 1 nodo para que puedas enseñar rs.status() desde la clase 1
+  mongo:
+    image: mongo:7
+    container_name: distribuidora_mongo
+    restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - polyglot_net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Inicializador que convierte el mongo en Replica Set de 1 nodo
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - polyglot_net
+    entrypoint: >
+      bash -c "
+      echo 'Esperando a mongo...';
+      sleep 5;
+      mongosh --host distribuidora_mongo:27017 --eval '
+        try {
+          rs.status();
+        } catch(e) {
+          rs.initiate({
+            _id: "rs0",
+            members: [{ _id: 0, host: "distribuidora_mongo:27017" }]
+          });
+        }
+      '
+      "
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: distribuidora_mongo_express
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://distribuidora_mongo:27017/
+      ME_CONFIG_BASICAUTH: false
+    ports:
+      - "8081:8081"
+    networks:
+      - polyglot_net
+
+  # 3. REDIS - Para datos efimeros y de alta velocidad: carrito, sesiones, stock cache
+  redis:
+    image: redis:7-alpine
+    container_name: distribuidora_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "Admin123"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - polyglot_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "Admin123", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: distribuidora_redis_commander
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOSTS: local:distribuidora_redis:6379:0:Admin123
+    ports:
+      - "8082:8080"
+    networks:
+      - polyglot_net
